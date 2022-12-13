@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
@@ -10,10 +11,15 @@ import (
 	"net/http"
 )
 
+var DB *sql.DB
+
 func main() {
-	DB := mysqlConnect.ConnectMysql()
+	DB = mysqlConnect.ConnectMysql()
 
 	route := gin.Default()
+	route.POST("/api/v1/getTodo", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"xxx": "xxxx"})
+	})
 	route.GET("/home", func(c *gin.Context) {
 
 		rows, _ := DB.Query("select * from  goTodoTest")
