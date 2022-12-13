@@ -10,6 +10,12 @@ import (
 
 //var DB *sql.DB
 
+type user struct {
+	id       int
+	name     string
+	password string
+}
+
 func main() {
 	viper.AddConfigPath("./")
 	viper.SetConfigName("mysql")
@@ -24,7 +30,7 @@ func main() {
 	port := viper.GetString("mysql.port")
 	//dbName := viper.GetString("mysql.go-todo")
 
-	path := strings.Join([]string{username, ":", password, "@tcp(", ip, ":", port, ")/", "?charset=utf8"}, "")
+	path := strings.Join([]string{username, ":", password, "@tcp(", ip, ":", port, ")/go-todo", "?charset=utf8"}, "")
 	fmt.Println(path)
 	DB, err := sql.Open("mysql", path)
 	if err != nil {
@@ -37,11 +43,18 @@ func main() {
 	DB.SetConnMaxLifetime(100)
 	//设置上数据库最大闲置连接数
 	DB.SetMaxIdleConns(10)
-	rows, err := DB.Query("show databases;")
+	rows, err := DB.Query("select * from  goTodoTest")
 	//循环读取结果
+	var users []user
 	for rows.Next() {
-
-		var result []string
-		fmt.Println(rows.Scan(result))
+		//将每一行的结果都赋值到一个user对象中
+		var user user
+		err := rows.Scan(&user.id, &user.name, &user.password)
+		if err != nil {
+			fmt.Println("rows fail")
+		}
+		//将user追加到users的这个数组中
+		users = append(users, user)
 	}
+	fmt.Println(users)
 }
