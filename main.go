@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -13,11 +14,31 @@ import (
 
 var DB *sql.DB
 
+type Todo struct {
+	Name string `json:"name"`
+	Done bool   `json:"done"`
+}
+
 func main() {
 	DB = mysqlConnect.ConnectMysql()
-
+	var todo Todo
 	route := gin.Default()
 	route.POST("/api/v1/getTodo", func(c *gin.Context) {
+		err := c.ShouldBind(&todo)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println(todo.Name)
+		fmt.Println(todo.Done)
+		query := "INSERT INTO `goTodoTest` (`name`, `done`) VALUES (?, ?)"
+		insertResult, err := DB.ExecContext(context.Background(), query, todo.Name, todo.Done)
+		if err != nil {
+			fmt.Println("数据库插入错误", err)
+		}
+		fmt.Println(insertResult)
+		id, err := insertResult.LastInsertId()
+		fmt.Println("inserted id:", id)
+
 		c.JSON(http.StatusOK, gin.H{"xxx": "xxxx"})
 	})
 	route.GET("/home", func(c *gin.Context) {
