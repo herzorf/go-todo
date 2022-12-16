@@ -7,20 +7,15 @@ import (
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/herzorf/go-todo/mysqlConnect"
+	"github.com/herzorf/go-todo/type/mysql"
 	"net/http"
 )
 
 var DB *sql.DB
 
-type Todo struct {
-	Id   int    `json:"id"`
-	Name string `json:"name"`
-	Done bool   `json:"done"`
-}
-
 func main() {
 	DB = mysqlConnect.ConnectMysql()
-	var todo Todo
+	var todo mysql.Todo
 	route := gin.Default()
 	route.POST("/api/v1/addTodo", func(c *gin.Context) {
 		err := c.ShouldBind(&todo)
@@ -44,10 +39,10 @@ func main() {
 		if err != nil {
 			fmt.Println("数据库查询错误", err)
 		}
-		var todos []Todo
+		var todos []mysql.Todo
 
 		for result.Next() {
-			var todo Todo
+			var todo mysql.Todo
 			err := result.Scan(&todo.Id, &todo.Name, &todo.Done)
 			if err != nil {
 				fmt.Println("查询结果扫描错误", err)
