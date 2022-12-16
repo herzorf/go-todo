@@ -3,18 +3,17 @@ package main
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/herzorf/go-todo/mysqlConnect"
-	"github.com/herzorf/go-todo/type/mysql"
 	"net/http"
 )
 
 var DB *sql.DB
 
 type Todo struct {
+	Id   int    `json:"id"`
 	Name string `json:"name"`
 	Done bool   `json:"done"`
 }
@@ -23,13 +22,11 @@ func main() {
 	DB = mysqlConnect.ConnectMysql()
 	var todo Todo
 	route := gin.Default()
-	route.POST("/api/v1/getTodo", func(c *gin.Context) {
+	route.POST("/api/v1/addTodo", func(c *gin.Context) {
 		err := c.ShouldBind(&todo)
 		if err != nil {
 			panic(err)
 		}
-		fmt.Println(todo.Name)
-		fmt.Println(todo.Done)
 		query := "INSERT INTO `goTodoTest` (`name`, `done`) VALUES (?, ?)"
 		insertResult, err := DB.ExecContext(context.Background(), query, todo.Name, todo.Done)
 		if err != nil {
@@ -39,27 +36,25 @@ func main() {
 		id, err := insertResult.LastInsertId()
 		fmt.Println("inserted id:", id)
 
-		c.JSON(http.StatusOK, gin.H{"xxx": "xxxx"})
+		c.JSON(http.StatusOK, gin.H{"result": "请求成功"})
 	})
-	route.GET("/home", func(c *gin.Context) {
-
-		rows, _ := DB.Query("select * from  goTodoTest")
-		//循环读取结果
-		var users []mysql.User
-		for rows.Next() {
-			//将每一行的结果都赋值到一个user对象中
-			var user mysql.User
-			err := rows.Scan(&user.Id, &user.Name, &user.Password)
-			if err != nil {
-				fmt.Println("rows fail")
-			}
-			//将user追加到users的这个数组中
-			users = append(users, user)
+	route.GET("/api/v1/getTodos", func(c *gin.Context) {
+		query := "SELECT * from  goTodoTest"
+		result, err := DB.Query(query)
+		if err != nil {
+			fmt.Println("数据库查询错误", err)
 		}
-		fmt.Println(users)
-		marshal, _ := json.Marshal(users)
+		var todos []Todo
 
-		c.String(http.StatusOK, string(marshal))
+		for result.Next() {
+			var todo Todo
+			err := result.Scan(&todo.Id, &todo.Name, &todo.Done)
+			if err != nil {
+				fmt.Println("查询结果扫描错误", err)
+			}
+			todos = append(todos, todo)
+		}
+		c.JSON(http.StatusOK, gin.H{"data": todos})
 	})
 
 	err := route.Run()
