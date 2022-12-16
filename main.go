@@ -8,6 +8,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/herzorf/go-todo/mysqlConnect"
 	"github.com/herzorf/go-todo/type/mysql"
+	"github.com/herzorf/go-todo/type/request"
 	"net/http"
 )
 
@@ -31,7 +32,7 @@ func main() {
 		id, err := insertResult.LastInsertId()
 		fmt.Println("inserted id:", id)
 
-		c.JSON(http.StatusOK, gin.H{"result": "请求成功"})
+		c.JSON(http.StatusOK, gin.H{"result": "添加成功"})
 	})
 	route.GET("/api/v1/getTodos", func(c *gin.Context) {
 		query := "SELECT * from  goTodoTest"
@@ -51,7 +52,30 @@ func main() {
 		}
 		c.JSON(http.StatusOK, gin.H{"data": todos})
 	})
+	route.POST("/api/v1/toggleTodo", func(c *gin.Context) {
+		var id request.ToggleTodo
+		err := c.ShouldBind(&id)
+		if err != nil {
+			panic(err)
+		}
+		selectQuery := "SELECT * FROM goTodoTest WHERE id=?"
+		result, err := DB.Query(selectQuery, id.Id)
+		var todo mysql.Todo
+		for result.Next() {
+			err := result.Scan(&todo.Id, &todo.Name, &todo.Done)
+			if err != nil {
+				panic(err)
+			}
+			fmt.Println(todo)
+		}
+		query := "UPDATE goTodoTest set done= ? WHERE id=?"
+		_, err = DB.Exec(query, !todo.Done, todo.Id)
+		if err != nil {
+			panic(err)
+		}
+		c.JSON(http.StatusOK, gin.H{"message": "请求成功"})
 
+	})
 	err := route.Run()
 	if err != nil {
 		panic("gin 启动失败")
