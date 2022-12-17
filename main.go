@@ -73,12 +73,37 @@ func ToggleTodo(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "请求成功"})
 }
+
+func DeleteTodo(c *gin.Context) {
+	var id request.ToggleTodo
+	err := c.ShouldBind(&id)
+	if err != nil {
+		panic(err)
+	}
+	selectQuery := "SELECT * FROM goTodoTest WHERE id=?"
+	result, err := DB.Query(selectQuery, id.Id)
+	var todo mysql.Todo
+	for result.Next() {
+		err := result.Scan(&todo.Id, &todo.Name, &todo.Done)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println(todo)
+	}
+	query := "DELETE from  goTodoTest   WHERE id=?"
+	_, err = DB.Exec(query, todo.Id)
+	if err != nil {
+		panic(err)
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "请求成功"})
+}
 func main() {
 	DB = mysqlConnect.ConnectMysql()
 	route := gin.Default()
 	route.POST("/api/v1/addTodo", AddTodo)
 	route.GET("/api/v1/getTodos", GetTodos)
 	route.POST("/api/v1/toggleTodo", ToggleTodo)
+	route.POST("/api/v1/deleteTodo", DeleteTodo)
 	err := route.Run()
 	if err != nil {
 		panic("gin 启动失败")
